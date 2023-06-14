@@ -1,4 +1,4 @@
-const { dbConfig, connection, pool } = require("../db/db");
+const { dbConfig, connection} = require("../db/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
@@ -10,6 +10,9 @@ const {
   generateTenantDatabaseName,
 } = require("../utils/DatabaseNameGenerator");
 const { createTenantDatabase } = require("../utils/CreateTenantDatabase");
+
+const { pool } = require('../db/db');
+const { generateToken } = require("../utils/GenerateToken");
 
 const HandleContactRegister = async (req, res) => {
   try {
@@ -32,9 +35,9 @@ const HandleContactRegister = async (req, res) => {
     // Encrypt password
     const hashedPassword = await encryptPassword(password);
 
-    const registrationQuery =
-      "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`) VALUES (?, ?, ?, ?)";
-    const registrationValues = [email, hashedPassword, name, tenant_id];
+    // Check if contact already exists
+    const checkContactQuery = 'SELECT * FROM contacts WHERE email = ?';
+    const checkContactValues = [email];
 
     // Get a connection from the pool
     pool.getConnection((error, connection) => {
@@ -43,13 +46,28 @@ const HandleContactRegister = async (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
       }
 
-      // Insert registration data into the 'contacts' table
-      connection.query(
-        registrationQuery,
-        registrationValues,
-        (queryError, results) => {
-          if (queryError) {
-            console.error("Error inserting registration data:", queryError);
+      // Check if the contact exists
+      connection.query(checkContactQuery, checkContactValues, (queryError, results) => {
+        if (queryError) {
+          console.error("Error checking contact existence:", queryError);
+          connection.release();
+          return res.status(500).json({ error: "Registration failed" });
+        }
+
+        if (results.length > 0) {
+          // Contact already exists
+          connection.release();
+          return res.status(400).json({ error: "Contact already exists" });
+        }
+
+        // Insert registration data into the 'contacts' table
+        const registrationQuery =
+          "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`) VALUES (?, ?, ?, ?)";
+        const registrationValues = [email, hashedPassword, name, tenant_id];
+
+        connection.query(registrationQuery, registrationValues, (insertError, insertResult) => {
+          if (insertError) {
+            console.error("Error inserting registration data:", insertError);
             connection.release();
             return res.status(500).json({ error: "Registration failed" });
           }
@@ -65,8 +83,8 @@ const HandleContactRegister = async (req, res) => {
               connection.release();
               res.status(500).json({ error: "Registration failed" });
             });
-        }
-      );
+        });
+      });
     });
   } catch (error) {
     console.error("Error during contact registration:", error);
@@ -74,6 +92,56 @@ const HandleContactRegister = async (req, res) => {
   }
 };
 
-// Function to create the tenant's database
 
-module.exports = HandleContactRegister;
+const HandleLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
+
+    const getUserQuery = 'SELECT * FROM contacts WHERE email = ?';
+    const getUserValues = [email];
+
+    // Get a connection from the pool
+    pool.getConnection((error, connection) => {
+      if (error) {
+        console.error('Error getting database connection:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+
+      connection.query(getUserQuery, getUserValues, async (queryError, results) => {
+        if (queryError) {
+          console.error('Error retrieving user data:', queryError);
+          connection.release();
+          return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        if (results.length === 0) {
+          connection.release();
+          return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const user = results[0];
+        const passwordMatch = await bcrypt.compare(password, user.password);
+
+        if (!passwordMatch) {
+          connection.release();
+          return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Generate token
+        const token =await generateToken(user.tenant_id);
+
+        connection.release();
+        res.status(200).json({ token });
+      });
+    });
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = {HandleContactRegister,HandleLogin};

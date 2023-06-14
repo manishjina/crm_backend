@@ -6,7 +6,7 @@ require("dotenv").config();
 const dbConfig={
     host:'localhost',
     user:'root',
-    password:'root',
+    password:'Suvam@7787',
     database:'universaldatahub',
     connectionLimit:3
   }

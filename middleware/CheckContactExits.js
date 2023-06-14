@@ -1,5 +1,4 @@
-const mysql = require('mysql');
-const { pool } = require('../db/db');
+const { connection, pool } = require('../db/db');
 
 const checkUserExists = (req, res, next) => {
   const { email } = req.body;
@@ -22,15 +21,18 @@ const checkUserExists = (req, res, next) => {
         return res.status(500).json({ error: 'Internal server error' });
       }
 
-      if (results.length > 0) {
+     else if (results.length > 0) {
         // User already exists
         connection.release();
-        return res.status(400).json({ error: 'Contacts already exists plese login' });
+        return res.status(400).json({ error: 'Contacts already exists' });
       }
 
-      // User does not exist, proceed to the next middleware or route handler
-      connection.release();
+      // User does not exist, release the connection and proceed to the next middleware or route handler
+      else {
+          
+          connection.release();
       next();
+      }
     });
   });
 };
