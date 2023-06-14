@@ -12,7 +12,7 @@ function verifyToken(req, res, next) {
     const { tenant_uuid } = decoded;
 
     // Attach the 'tenant_uuid' to the request object for future use
-    req.tenant_uuid = tenant_uuid;
+    req.tenant_id = tenant_uuid;
 
     next();
   } catch (error) {
