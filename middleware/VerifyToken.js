@@ -9,10 +9,9 @@ function verifyToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.secret_key);
-    const { tenant_uuid } = decoded;
-
+    const tenant_id = decoded;
     // Attach the 'tenant_uuid' to the request object for future use
-    req.tenant_id = tenant_uuid;
+    req.body.tenant_id = tenant_id;
 
     next();
   } catch (error) {

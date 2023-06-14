@@ -2,6 +2,7 @@ const express=require('express')
 const cors=require('cors');
 const { connection } = require('./db/db');
 const { ContactRoute } = require('./routes/Contact.Routes');
+const { OrganisationRoute } = require('./routes/organisation.Route');
 const app=express()
 app.use(express.json());
 app.use(cors());
@@ -15,6 +16,7 @@ app.use((req, res, next) => {
 
 
 app.use("/contacts",ContactRoute)
+app.use("/organisation",OrganisationRoute)
 
 app.get("/",(req,res)=>{
 
