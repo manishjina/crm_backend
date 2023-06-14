@@ -31,10 +31,10 @@ app.get("/",(req,res)=>{
     } else {
       try {
         await connection(); // Connect to the database
-        console.log(process.env.PORT||8000);
+      
       } catch (error) {
         console.log("Error while connecting to the database:", error);
-        server.close();
+      
       }
     }
   });
