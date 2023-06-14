@@ -13,85 +13,114 @@ const { createTenantDatabase } = require("../utils/CreateTenantDatabase");
 
 const { pool } = require('../db/db');
 const { generateToken } = require("../utils/GenerateToken");
-
 const HandleContactRegister = async (req, res) => {
-  try {
-    const { email, name, password } = req.body;
-
-    if (
-      !email ||
-      !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/) ||
-      !password ||
-      password.length < 6 ||
-      !name ||
-      name.trim().length === 0
-    ) {
-      return res.status(400).json({ error: "Invalid request data" });
-    }
-
-    // Generate database name
-    const tenant_id = generateTenantDatabaseName(name, email, res);
-
-    // Encrypt password
-    const hashedPassword = await encryptPassword(password);
-
-    // Check if contact already exists
-    const checkContactQuery = 'SELECT * FROM contacts WHERE email = ?';
-    const checkContactValues = [email];
-
-    // Get a connection from the pool
-    pool.getConnection((error, connection) => {
-      if (error) {
-        console.error("Error getting database connection:", error);
-        return res.status(500).json({ error: "Internal server error" });
+    try {
+      const { email, name, password } = req.body;
+  
+      if (
+        !email ||
+        !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/) ||
+        !password ||
+        password.length < 6 ||
+        !name ||
+        name.trim().length === 0
+      ) {
+        return res.status(400).json({ error: "Invalid request data" });
       }
-
-      // Check if the contact exists
-      connection.query(checkContactQuery, checkContactValues, (queryError, results) => {
-        if (queryError) {
-          console.error("Error checking contact existence:", queryError);
-          connection.release();
-          return res.status(500).json({ error: "Registration failed" });
+  
+      // Generate database name
+      const tenant_id = generateTenantDatabaseName(name, email, res);
+  
+      // Encrypt password
+      const hashedPassword = await encryptPassword(password);
+  
+      // Check if contact already exists
+      const checkContactQuery = 'SELECT * FROM contacts WHERE email = ?';
+      const checkContactValues = [email];
+  
+      // Get a connection from the pool
+      pool.getConnection((error, connection) => {
+        if (error) {
+          console.error("Error getting database connection:", error);
+          return res.status(500).json({ error: "Internal server error" });
         }
-
-        if (results.length > 0) {
-          // Contact already exists
-          connection.release();
-          return res.status(400).json({ error: "Contact already exists" });
-        }
-
-        // Insert registration data into the 'contacts' table
-        const registrationQuery =
-          "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`) VALUES (?, ?, ?, ?)";
-        const registrationValues = [email, hashedPassword, name, tenant_id];
-
-        connection.query(registrationQuery, registrationValues, (insertError, insertResult) => {
-          if (insertError) {
-            console.error("Error inserting registration data:", insertError);
+  
+        // Check if the contact exists
+        connection.query(checkContactQuery, checkContactValues, (queryError, results) => {
+          if (queryError) {
+            console.error("Error checking contact existence:", queryError);
             connection.release();
             return res.status(500).json({ error: "Registration failed" });
           }
-
-          // Create the tenant's database using the tenant_id
-          createTenantDatabase(tenant_id)
-            .then(() => {
+  
+          if (results.length > 0) {
+            // Contact already exists
+            connection.release();
+            return res.status(400).json({ error: "Contact already exists" });
+          }
+  
+          // Insert registration data into the 'contacts' table
+          const registrationQuery =
+            "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`) VALUES (?, ?, ?, ?)";
+          const registrationValues = [email, hashedPassword, name, tenant_id];
+  
+          connection.query(registrationQuery, registrationValues, (insertError, insertResult) => {
+            if (insertError) {
+              console.error("Error inserting registration data:", insertError);
               connection.release();
-              res.status(200).json({ message: "Registration successful" });
-            })
-            .catch((tenantError) => {
-              console.error("Error creating tenant database:", tenantError);
-              connection.release();
-              res.status(500).json({ error: "Registration failed" });
+              return res.status(500).json({ error: "Registration failed" });
+            }
+  
+            const contactId = insertResult.insertId; // Get the inserted contact's ID
+  
+            // Save data in the 'organisation' table
+            const organisationQuery =
+              "INSERT INTO organisation (`org_db_name`, `org_email_address`) VALUES (?, ?)";
+            const organisationValues = [tenant_id, email];
+  
+            connection.query(organisationQuery, organisationValues, (orgInsertError, orgInsertResult) => {
+              if (orgInsertError) {
+                console.error("Error inserting organisation data:", orgInsertError);
+                connection.release();
+                return res.status(500).json({ error: "Registration failed" });
+              }
+  
+              const orgId = orgInsertResult.insertId; // Get the inserted organisation's ID
+  
+              // Save data in the 'roles' table
+              const rolesQuery =
+                "INSERT INTO roles (`contact_role_id`, `role_name`) VALUES (?, ?)";
+              const rolesValues = [contactId, "SAdmin"];
+  
+              connection.query(rolesQuery, rolesValues, (rolesInsertError, rolesInsertResult) => {
+                if (rolesInsertError) {
+                  console.error("Error inserting roles data:", rolesInsertError);
+                  connection.release();
+                  return res.status(500).json({ error: "Registration failed" });
+                }
+  
+                // Create the tenant's database using the tenant_id
+                createTenantDatabase(tenant_id)
+                  .then(() => {
+                    connection.release();
+                    res.status(200).json({ message: "Registration successful" });
+                  })
+                  .catch((tenantError) => {
+                    console.error("Error creating tenant database:", tenantError);
+                    connection.release();
+                    res.status(500).json({ error: "Registration failed" });
+                  });
+              });
             });
+          });
         });
       });
-    });
-  } catch (error) {
-    console.error("Error during contact registration:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
+    } catch (error) {
+      console.error("Error during contact registration:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+  
 
 const HandleLogin = async (req, res) => {
   try {
