@@ -7,7 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 
 // Create an OAuth2Client instance with your client ID
 
-const client = new OAuth2Client("");
+const client = new OAuth2Client("920633177734-9580n1m1ckgsmilqmd5j1qurkp2evuo7.apps.googleusercontent.com");
 const cookieParser = require("cookie-parser");
 const { encryptPassword } = require("../utils/PasswordEncrypt");
 const {
@@ -287,101 +287,156 @@ const HandleLogin = async (req, res) => {
 
 // Handler for handling Google Sign-In
 
+
 async function handleGoogleSignIn(req, res) {
-  const { idToken } = req.body;
+  let idToken="eyJhbGciOiJSUzI1NiIsImtpZCI6IjA1MTUwYTEzMjBiOTM5NWIwNTcxNjg3NzM3NjkyODUwOWJhYjQ0YWMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTExOTAyMDkyMTg2NjcyNTAyNTU4IiwiaGQiOiJkZXZyaXNlci5jb20iLCJlbWFpbCI6InN1dmFtLnBhbmRhQGRldnJpc2VyLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiX0xjcmt1SG5ESWgwZmhtZUJ6ZU5KUSIsIm5hbWUiOiJTdXZhbSBQQU5EQSIsImdpdmVuX25hbWUiOiJTdXZhbSIsImZhbWlseV9uYW1lIjoiUEFOREEiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4Njg4ODUxOSwiZXhwIjoxNjg2ODkyMTE5LCJqdGkiOiIyMmU1NGQ3ODQ2M2Q1Mjk4OTUzZmRjN2M5YTY5NzQzMDM3YmIxYmQxIn0.zNZ8P1l-9esiTASwCGKTwD1QQ1F9ezFf-wn9-v6s5nqQ8o6uRJ9GzqLtf0ltu3SUJQ5USRtfxZfOn7TtiPdjOn_fAw1hxwdmCfUl3Avys-XjHzLmEBHrlQzhWY3JnWdE3IDDRPavdVOugQTV8UGNR3H0pgzhBB_K-A5rcnjnjq8TG3xCE7hgBoTCytFOYVUZ29a_8rOrwRHeRYBTCJ9N2iGxDOU6fXdNXgXrA_4W9nYpv4XxEHjWCK7VfP2035U_5B1ceZMZeeG5J3fo1BkStZdhBt2FQEhRPJuEfVS_XayF2DzhJ07ue8RluOf1ugtOVJ0WIF8_HAgbmfeDn7NtyQ"
 
   try {
     // Verify the ID token
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: CLIENT_ID, // Verify that the token was issued for your client ID
+      audience: "920633177734-9580n1m1ckgsmilqmd5j1qurkp2evuo7.apps.googleusercontent.com", // Verify that the token was issued for your client ID
     });
 
+
     const { name, email, picture } = ticket.getPayload();
+    console.log(name, email, picture);
+
     const googleUserId = ticket.getUserId();
 
-    // Check if the user exists in the contacts table based on the email address
-    const query = "SELECT * FROM contacts WHERE email = ?";
-    connection.query(query, [email], async (error, results) => {
-      if (error) {
-        console.error("Error querying the database:", error);
-        return res.status(500).json({ error: "Database error" });
-      }
-
-      if (results.length > 0) {
-        // User already exists, generate session token or JWT
+    pool.getConnection((error, connection) => {
+      // Check if the user exists in the contacts table based on the email address
+      const query = "SELECT * FROM contacts WHERE email = ?";
+      connection.query(query, [email], async (error, results) => {
         const user = results[0];
-        const sessionToken = generateToken(user.tenant_id);
-        // Send the session token as a response
-        res.json({
-          success: true,
-          message: "Login successful",
-          data: {
-            userId: user.contact_id,
-            username: user.name,
-            email: email,
-            token: sessionToken,
-          },
-        });
-      } else {
-        // User doesn't exist, create a new user record
-        const newUser = {
-          google_user_id: googleUserId,
-          name,
-          email,
-          image_url: picture,
-        };
+        if (error) {
+          console.error("Error querying the database:", error);
+          return res.status(500).json({ error: "Database error" });
+        }
 
-        // insert the data to the contacts table
-        const insertQuery =
-          "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`) VALUES (?, ?, ?, ?)";
-        const insertValues = [email, null, name, user.tenant_id];
-        connection.query(insertQuery, newUser, async (error, result) => {
-          if (error) {
-            console.error("Error inserting new user into the database:", error);
-            return res.status(500).json({
-              success: false,
-              error: {
-                code: 500,
-                message: "Internal Server Error",
-                details: "Error inserting new user into the database.",
-              },
-            });
-          }
-
-          // Assign the generated user ID to the new user object
-          newUser.id = result.insertId;
-
-          // Generate session token or JWT for the new user
-          const user = result[0];
-          const token = await generateToken(user.tenant_id);
-          // Create database
+        if (results.length > 0) {
+          // User already exists, generate session token or JWT
+      
+          const sessionToken = generateToken(user.tenant_id);
+          // Send the session token as a response
+          res.json({
+            success: true,
+            message: "Login successful",
+            data: {
+              userId: user.contact_id,
+              username: user.name,
+              email: email,
+              token: sessionToken,
+            },
+          });
+        } else {
+          // User doesn't exist, create a new user record
+          const newUser = {
+            google_user_id: googleUserId,
+            name,
+            email,
+            image_url: picture,
+          };
           const tenant_id = generateTenantDatabaseName(name, email, res);
-          createTenantDatabase(tenant_id)
-            .then(() => {
-              connection.release();
-              res.status(200).jsona({
-                success: true,
-                message: "Registration successful",
-                data: {
-                  email: email,
-                },
-              });
-            })
-            .catch((tenantError) => {
-              console.error(":", tenantError);
-              connection.release();
-              res.status(500).json({
-                success: true,
-                error: {
-                  code: 500,
-                  message: "Registration failed",
-                  details: "Error creating tenant database",
-                },
-              });
-            });
-        });
-      }
+          // insert the data to the contacts table
+          const insertQuery =
+            "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`) VALUES (?, ?, ?, ?)";
+          const insertValues = [email,"" , name, tenant_id ];
+          connection.query(insertQuery, insertValues, async(insertError, insertResult) => {
+              if (insertError) {
+                console.error(
+                  "Error inserting registration data:",
+                  insertError
+                );
+                connection.release();
+                return res.status(500).json({
+                  success: false,
+                  error: "Registration failed",
+                  details: "Error inserting registration data",
+                });
+              }
+
+              const contactId = insertResult.insertId; // Get the inserted contact's ID
+
+              // Save data in the 'organisation' table
+              const organisationQuery =
+                "INSERT INTO organisation (`org_db_name`, `org_email_address`) VALUES (?, ?)";
+              const organisationValues = [tenant_id, email];
+
+              connection.query(
+                organisationQuery,
+                organisationValues,
+                (orgInsertError, orgInsertResult) => {
+                  if (orgInsertError) {
+                    console.error(
+                      "Error inserting organisation data:",
+                      orgInsertError
+                    );
+                    connection.release();
+                    return res.status(500).json({
+                      success: false,
+                      error: "Registration failed",
+                      details: "Error inserting organisation data",
+                    });
+                  }
+
+                  const orgId = orgInsertResult.insertId; // Get the inserted organisation's ID
+
+                  // Save data in the 'roles' table
+                  const rolesQuery =
+                    "INSERT INTO roles (`contact_role_id`, `role_name`) VALUES (?, ?)";
+                  const rolesValues = [contactId, "SAdmin"];
+
+                  connection.query(
+                    rolesQuery,
+                    rolesValues,
+                    (rolesInsertError, rolesInsertResult) => {
+                      if (rolesInsertError) {
+                        console.error(
+                          "Error inserting roles data:",
+                          rolesInsertError
+                        );
+                        connection.release(); 
+                        return res.status(500).json({
+                          success: false,
+                          error: "Registration failed",
+                          details: "Error inserting roles data",
+                        });
+                      }
+
+                      // Create the tenant's database using the tenant_id
+                      createTenantDatabase(tenant_id)
+                        .then(() => {
+                          connection.release();
+                          res.status(200).json({
+                            success: true,
+                            message: "Registration successful",
+                            data: {
+                              userId: contactId,
+                              email: email,
+                            },
+                          });
+                        })
+                        .catch((tenantError) => {
+                          console.error(
+                            "Error creating tenant database:",
+                            tenantError
+                          );
+                          connection.release();
+                          res.status(500).json({
+                            success: false,
+                            error: "Registration failed",
+                            details: "Error creating tenant database",
+                          });
+                        });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      });
     });
   } catch (error) {
     // Error occurred during token verification
@@ -390,4 +445,8 @@ async function handleGoogleSignIn(req, res) {
   }
 }
 
+
+
 module.exports = { HandleContactRegister, HandleLogin, handleGoogleSignIn };
+
+
