@@ -289,18 +289,19 @@ const HandleLogin = async (req, res) => {
 
 
 async function handleGoogleSignIn(req, res) {
-  let idToken="eyJhbGciOiJSUzI1NiIsImtpZCI6IjA1MTUwYTEzMjBiOTM5NWIwNTcxNjg3NzM3NjkyODUwOWJhYjQ0YWMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTExOTAyMDkyMTg2NjcyNTAyNTU4IiwiaGQiOiJkZXZyaXNlci5jb20iLCJlbWFpbCI6InN1dmFtLnBhbmRhQGRldnJpc2VyLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiX0xjcmt1SG5ESWgwZmhtZUJ6ZU5KUSIsIm5hbWUiOiJTdXZhbSBQQU5EQSIsImdpdmVuX25hbWUiOiJTdXZhbSIsImZhbWlseV9uYW1lIjoiUEFOREEiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4Njg4ODUxOSwiZXhwIjoxNjg2ODkyMTE5LCJqdGkiOiIyMmU1NGQ3ODQ2M2Q1Mjk4OTUzZmRjN2M5YTY5NzQzMDM3YmIxYmQxIn0.zNZ8P1l-9esiTASwCGKTwD1QQ1F9ezFf-wn9-v6s5nqQ8o6uRJ9GzqLtf0ltu3SUJQ5USRtfxZfOn7TtiPdjOn_fAw1hxwdmCfUl3Avys-XjHzLmEBHrlQzhWY3JnWdE3IDDRPavdVOugQTV8UGNR3H0pgzhBB_K-A5rcnjnjq8TG3xCE7hgBoTCytFOYVUZ29a_8rOrwRHeRYBTCJ9N2iGxDOU6fXdNXgXrA_4W9nYpv4XxEHjWCK7VfP2035U_5B1ceZMZeeG5J3fo1BkStZdhBt2FQEhRPJuEfVS_XayF2DzhJ07ue8RluOf1ugtOVJ0WIF8_HAgbmfeDn7NtyQ"
+  let idToken="eyJhbGciOiJSUzI1NiIsImtpZCI6IjA1MTUwYTEzMjBiOTM5NWIwNTcxNjg3NzM3NjkyODUwOWJhYjQ0YWMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTExOTAyMDkyMTg2NjcyNTAyNTU4IiwiaGQiOiJkZXZyaXNlci5jb20iLCJlbWFpbCI6InN1dmFtLnBhbmRhQGRldnJpc2VyLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoibDVlTEpQSi1pQjBPWDhZUHV3Y3ZfZyIsIm5hbWUiOiJTdXZhbSBQQU5EQSIsImdpdmVuX25hbWUiOiJTdXZhbSIsImZhbWlseV9uYW1lIjoiUEFOREEiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4NzA4MzI4MiwiZXhwIjoxNjg3MDg2ODgyLCJqdGkiOiIzYzMxN2FiN2MwYzNjMjAyMjJlYjFjYTE2YTUxYjU0Yjk5M2Q2ZGIzIn0.ndWZswZgppiUN1WAbRppElIt_kYPe0BkTKr_BoIFmbm0FF_80z5UDnuV8--rOxt2hv1buWc3ZzOIAHm8EGoaSRINy11OPm3urDNayA2B-8K49lQJTpHjR2tUkIXdrNvahKoOJvYtq6txUc78rejVKmIfMpcCFGCwmIpRqQYo7GnQg2521VqeYpeCxivhsSVXuywiv815BnhfROhvvYLJAytq2Z3zTLHqhDKNZ9UiTmpcU0OxnU97HjOlr9NjbpZNs_DgOgs2ErEuvHMNqgkibIuyAAMnX1eLcrateK0f_7XOQoCSUHv489UG3AO3FikNfXCcEWLSEi9CASU1r8yHcQ"
 
   try {
-    // Verify the ID token
+    // Verify the ID 
     const ticket = await client.verifyIdToken({
       idToken,
       audience: "920633177734-9580n1m1ckgsmilqmd5j1qurkp2evuo7.apps.googleusercontent.com", // Verify that the token was issued for your client ID
     });
 
-
+// here we are taking google unique id as password. 
+    const {password}=req.body
     const { name, email, picture } = ticket.getPayload();
-    console.log(name, email, picture);
+    console.log(name, email, picture,password);
 
     const googleUserId = ticket.getUserId();
 
@@ -337,11 +338,15 @@ async function handleGoogleSignIn(req, res) {
             email,
             image_url: picture,
           };
+          // const hashedPassword = await encryptPassword(password);
+
+          // console.log(hashedPassword)
           const tenant_id = generateTenantDatabaseName(name, email, res);
           // insert the data to the contacts table
+          const hashedPassword=encryptPassword(password)
           const insertQuery =
-            "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`) VALUES (?, ?, ?, ?)";
-          const insertValues = [email,"" , name, tenant_id ];
+            "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`, login_by) VALUES (?, ?, ?, ?, ?)";
+        const insertValues = [email, hashedPassword, name, tenant_id, "google" ];
           connection.query(insertQuery, insertValues, async(insertError, insertResult) => {
               if (insertError) {
                 console.error(
