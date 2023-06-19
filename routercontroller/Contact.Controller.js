@@ -289,15 +289,14 @@ const HandleLogin = async (req, res) => {
 
 
 async function handleGoogleSignIn(req, res) {
-  let idToken="eyJhbGciOiJSUzI1NiIsImtpZCI6IjA1MTUwYTEzMjBiOTM5NWIwNTcxNjg3NzM3NjkyODUwOWJhYjQ0YWMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiOTIwNjMzMTc3NzM0LTk1ODBuMW0xY2tnc21pbHFtZDVqMXF1cmtwMmV2dW83LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTExOTAyMDkyMTg2NjcyNTAyNTU4IiwiaGQiOiJkZXZyaXNlci5jb20iLCJlbWFpbCI6InN1dmFtLnBhbmRhQGRldnJpc2VyLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoibDVlTEpQSi1pQjBPWDhZUHV3Y3ZfZyIsIm5hbWUiOiJTdXZhbSBQQU5EQSIsImdpdmVuX25hbWUiOiJTdXZhbSIsImZhbWlseV9uYW1lIjoiUEFOREEiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4NzA4MzI4MiwiZXhwIjoxNjg3MDg2ODgyLCJqdGkiOiIzYzMxN2FiN2MwYzNjMjAyMjJlYjFjYTE2YTUxYjU0Yjk5M2Q2ZGIzIn0.ndWZswZgppiUN1WAbRppElIt_kYPe0BkTKr_BoIFmbm0FF_80z5UDnuV8--rOxt2hv1buWc3ZzOIAHm8EGoaSRINy11OPm3urDNayA2B-8K49lQJTpHjR2tUkIXdrNvahKoOJvYtq6txUc78rejVKmIfMpcCFGCwmIpRqQYo7GnQg2521VqeYpeCxivhsSVXuywiv815BnhfROhvvYLJAytq2Z3zTLHqhDKNZ9UiTmpcU0OxnU97HjOlr9NjbpZNs_DgOgs2ErEuvHMNqgkibIuyAAMnX1eLcrateK0f_7XOQoCSUHv489UG3AO3FikNfXCcEWLSEi9CASU1r8yHcQ"
-
+  const {tokenId}=req.body;
+  let idToken=tokenId
   try {
     // Verify the ID 
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: "920633177734-9580n1m1ckgsmilqmd5j1qurkp2evuo7.apps.googleusercontent.com", // Verify that the token was issued for your client ID
+      audience: "1033811474185-1jehdlst3s9b7qrphf016nlglqm8rjc6.apps.googleusercontent.com", // Verify that the token was issued for your client ID
     });
-
 // here we are taking google unique id as password. 
     const {password}=req.body
     const { name, email, picture } = ticket.getPayload();
@@ -453,5 +452,4 @@ async function handleGoogleSignIn(req, res) {
 
 
 module.exports = { HandleContactRegister, HandleLogin, handleGoogleSignIn };
-
 
