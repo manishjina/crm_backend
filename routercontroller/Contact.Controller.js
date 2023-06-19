@@ -3,11 +3,14 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
 const mysql = require("mysql");
-const { OAuth2Client } = require('google-auth-library');
+const { OAuth2Client } = require("google-auth-library");
 
 // Create an OAuth2Client instance with your client ID
-
-const client = new OAuth2Client("920633177734-9580n1m1ckgsmilqmd5j1qurkp2evuo7.apps.googleusercontent.com");
+const clientId =
+  "1033811474185-1jehdlst3s9b7qrphf016nlglqm8rjc6.apps.googleusercontent.com"; // Verify that the token was issued for your client ID
+const client = new OAuth2Client(
+  "1033811474185-1jehdlst3s9b7qrphf016nlglqm8rjc6.apps.googleusercontent.com"
+);
 const cookieParser = require("cookie-parser");
 const { encryptPassword } = require("../utils/PasswordEncrypt");
 const {
@@ -19,11 +22,11 @@ const { pool } = require("../db/db");
 const { generateToken } = require("../utils/GenerateToken");
 const HandleContactRegister = async (req, res) => {
   try {
-    let  { email, name, password } = req.body;
+    let { email, name, password } = req.body;
 
-    name=name.trim()
-    password=password.trim()
-    email=email.trim()
+    name = name.trim();
+    password = password.trim();
+    email = email.trim();
     if (
       !email ||
       !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/) ||
@@ -55,7 +58,7 @@ const HandleContactRegister = async (req, res) => {
         return res.status(500).json({
           success: false,
           error: "Internal server error",
-          details:"Error getting database connection"
+          details: "Error getting database connection",
         });
       }
 
@@ -201,8 +204,8 @@ const HandleContactRegister = async (req, res) => {
 const HandleLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    password=password.trim()
-    email=email.trim()
+    password = password.trim();
+    email = email.trim();
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -287,20 +290,21 @@ const HandleLogin = async (req, res) => {
 
 // Handler for handling Google Sign-In
 
-
 async function handleGoogleSignIn(req, res) {
-  const {tokenId}=req.body;
-  let idToken=tokenId
+  const { tokenId } = req.body;
+  let idToken = tokenId;
   try {
-    // Verify the ID 
+    // Verify the ID
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: "1033811474185-1jehdlst3s9b7qrphf016nlglqm8rjc6.apps.googleusercontent.com", // Verify that the token was issued for your client ID
+      audience: clientId,
     });
-// here we are taking google unique id as password. 
-    const {password}=req.body
+
+    // here we are taking google unique id as password.
+    const { password } = req.body;
     const { name, email, picture } = ticket.getPayload();
-    console.log(name, email, picture,password);
+    // let dd = ticket.getPayload();
+    // console.log(name, email, dd, password);
 
     const googleUserId = ticket.getUserId();
 
@@ -316,7 +320,7 @@ async function handleGoogleSignIn(req, res) {
 
         if (results.length > 0) {
           // User already exists, generate session token or JWT
-      
+
           const sessionToken = generateToken(user.tenant_id);
           // Send the session token as a response
           res.json({
@@ -342,11 +346,23 @@ async function handleGoogleSignIn(req, res) {
           // console.log(hashedPassword)
           const tenant_id = generateTenantDatabaseName(name, email, res);
           // insert the data to the contacts table
-          const hashedPassword=encryptPassword(password)
+          const hashedPassword = await encryptPassword(password);
+          console.log(hashedPassword);
+
           const insertQuery =
-            "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`, login_by) VALUES (?, ?, ?, ?, ?)";
-        const insertValues = [email, hashedPassword, name, tenant_id, "google" ];
-          connection.query(insertQuery, insertValues, async(insertError, insertResult) => {
+            "INSERT INTO contacts (`email`, `password`, `name`, `tenant_id`, `login_by`, `image_url`) VALUES (?, ?, ?, ?, ?, ?)";
+          const insertValues = [
+            email,
+            hashedPassword,
+            name,
+            tenant_id,
+            "google",
+            picture || "",
+          ];
+          connection.query(
+            insertQuery,
+            insertValues,
+            async (insertError, insertResult) => {
               if (insertError) {
                 console.error(
                   "Error inserting registration data:",
@@ -389,18 +405,19 @@ async function handleGoogleSignIn(req, res) {
                   // Save data in the 'roles' table
                   const rolesQuery =
                     "INSERT INTO roles (`contact_role_id`, `role_name`) VALUES (?, ?)";
-                  const rolesValues = [contactId, "SAdmin"];
+                  const rolesValues = [contactId, "Admin"];
 
                   connection.query(
                     rolesQuery,
                     rolesValues,
                     (rolesInsertError, rolesInsertResult) => {
+                      connection.release();
+
                       if (rolesInsertError) {
                         console.error(
                           "Error inserting roles data:",
                           rolesInsertError
                         );
-                        connection.release(); 
                         return res.status(500).json({
                           success: false,
                           error: "Registration failed",
@@ -408,31 +425,20 @@ async function handleGoogleSignIn(req, res) {
                         });
                       }
 
-                      // Create the tenant's database using the tenant_id
-                      createTenantDatabase(tenant_id)
-                        .then(() => {
-                          connection.release();
-                          res.status(200).json({
-                            success: true,
-                            message: "Registration successful",
-                            data: {
-                              userId: contactId,
-                              email: email,
-                            },
-                          });
-                        })
-                        .catch((tenantError) => {
-                          console.error(
-                            "Error creating tenant database:",
-                            tenantError
-                          );
-                          connection.release();
-                          res.status(500).json({
-                            success: false,
-                            error: "Registration failed",
-                            details: "Error creating tenant database",
-                          });
-                        });
+                      // Generate session token or JWT
+                      const sessionToken = generateToken(tenant_id);
+
+                      // Send the session token as a response
+                      res.json({
+                        success: true,
+                        message: "Registration successful",
+                        data: {
+                          userId: contactId,
+                          username: name,
+                          email: email,
+                          token: sessionToken,
+                        },
+                      });
                     }
                   );
                 }
@@ -443,13 +449,9 @@ async function handleGoogleSignIn(req, res) {
       });
     });
   } catch (error) {
-    // Error occurred during token verification
-    console.error("Error verifying Google ID token:", error);
-    res.status(400).json({ error: "Invalid ID token" });
+    console.error("Error verifying the Google ID token:", error);
+    return res.status(500).json({ error: "Google sign-in error" });
   }
 }
 
-
-
 module.exports = { HandleContactRegister, HandleLogin, handleGoogleSignIn };
-
