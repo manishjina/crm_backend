@@ -291,8 +291,9 @@ const HandleLogin = async (req, res) => {
 // Handler for handling Google Sign-In
 
 async function handleGoogleSignIn(req, res) {
-  const { tokenId } = req.body;
-  let idToken = tokenId;
+  // here i am taking 
+  const { authorization } = req.headers;
+  let idToken = authorization;
   try {
     // Verify the ID
     const ticket = await client.verifyIdToken({
@@ -420,7 +421,7 @@ async function handleGoogleSignIn(req, res) {
                         );
                         return res.status(500).json({
                           success: false,
-                          error: "Registration failed",
+                          error: "Registration failed", 
                           details: "Error inserting roles data",
                         });
                       }
